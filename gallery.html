@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Three Lives Gallery | Life Design Lab</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600&family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="style.css">
+<script src="config.js"></script>
+</head>
+<body>
+<header class="hero" style="padding-bottom:100px">
+  <nav><a href="index.html">← Add your lives</a></nav>
+  <div class="hero-inner">
+    <div class="eyebrow">Life Design Lab · Gallery</div>
+    <h1>Our Three Lives</h1>
+    <p><span id="count">0 people</span>, <span id="count3">0</span> possible futures. Refreshes every 20 seconds.</p>
+  </div>
+  <svg class="scribble" viewBox="0 0 1200 70" preserveAspectRatio="none" aria-hidden="true">
+    <path d="M0 40 C 150 10, 300 70, 450 40 S 750 10, 900 40 S 1100 60, 1200 30 L1200 70 L0 70 Z" fill="#FCFAFC"/>
+  </svg>
+</header>
+<main>
+  <div id="demo" class="banner" hidden>Demo mode: showing submissions saved in this browser only.</div>
+  <div class="filters">
+    <button class="chip on" data-f="0">All lives</button>
+    <button class="chip" data-f="1">Life 1 only</button>
+    <button class="chip" data-f="2">Life 2 only</button>
+    <button class="chip" data-f="3">Life 3 only</button>
+  </div>
+  <div class="wall" id="wall"><div class="empty">Loading lives…</div></div>
+</main>
+<footer>Johns Hopkins Life Design Lab · imagine.jhu.edu</footer>
+<script>
+const CFG = window.THREE_LIVES_CONFIG || {};
+const COLORS = ["#4A2346", "#002D72", "#A45C9A"];
+const NAMES = ["Current plan", "Plan B", "Wild card"];
+let data = [], filter = 0;
+if (!CFG.SCRIPT_URL) document.getElementById("demo").hidden = false;
+const esc = s => String(s || "").replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+
+async function load() {
+  try {
+    if (CFG.SCRIPT_URL) {
+      const r = await fetch(CFG.SCRIPT_URL + "?action=list");
+      const out = await r.json(); data = out.items || [];
+    } else {
+      data = JSON.parse(localStorage.getItem("threeLivesDemo") || "[]").filter(d => d.share)
+        .map(d => ({ ...d, name: d.showName ? d.name : "" })).reverse();
+    }
+    render();
+  } catch (e) { document.getElementById("wall").innerHTML = `<div class="empty">Couldn't load the gallery. (${esc(e.message)})</div>`; }
+}
+function render() {
+  document.getElementById("count").textContent = data.length + (data.length === 1 ? " person" : " people");
+  document.getElementById("count3").textContent = data.length * 3;
+  const wall = document.getElementById("wall");
+  if (!data.length) { wall.innerHTML = `<div class="empty">No lives shared yet. Be the first!</div>`; return; }
+  wall.innerHTML = data.map(d => {
+    const lives = (d.lives || []).map((l, i) => ({ ...l, i })).filter(l => !filter || l.i === filter - 1);
+    return `<article class="post">
+      <div class="who">${d.name ? esc(d.name) : "Anonymous designer"}${d.major ? " · " + esc(d.major) : ""}</div>
+      ${lives.map(l => `<div class="lifeline" style="border-color:${COLORS[l.i]}">
+        <small>Life ${l.i + 1} · ${NAMES[l.i]}</small><div>${esc(l.title || NAMES[l.i])}</div>
+        <details><summary>See the timeline</summary>
+          <ol>${[1,2,3,4,5].map(y => l["y" + y] ? `<li>${esc(l["y" + y])}</li>` : "").join("")}</ol>
+        </details></div>`).join("")}
+    </article>`;
+  }).join("");
+}
+document.querySelectorAll(".chip").forEach(c => c.onclick = () => {
+  document.querySelectorAll(".chip").forEach(x => x.classList.remove("on")); c.classList.add("on");
+  filter = +c.dataset.f; render();
+});
+load(); setInterval(load, 20000);
+</script>
+</body>
+</html>

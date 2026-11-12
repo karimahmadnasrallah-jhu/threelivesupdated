@@ -1,0 +1,186 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Three Lives | Life Design Lab</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600&family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="style.css">
+<script src="config.js"></script>
+</head>
+<body>
+<header class="hero">
+  <nav><a href="gallery.html">See the gallery →</a></nav>
+  <svg class="compass" viewBox="0 0 200 200" aria-hidden="true">
+    <circle cx="100" cy="100" r="80" fill="none" stroke="#6FA8DC" stroke-width="12"/>
+    <polygon points="100,5 112,88 100,100 88,88" fill="#fff"/><polygon points="100,195 88,112 100,100 112,112" fill="#fff"/>
+    <polygon points="5,100 88,88 100,100 88,112" fill="#6FA8DC"/><polygon points="195,100 112,112 100,100 112,88" fill="#6FA8DC"/>
+    <polygon points="38,38 95,90 100,100 90,95" fill="#fff" opacity=".7"/><polygon points="162,162 105,110 100,100 110,105" fill="#fff" opacity=".7"/>
+    <polygon points="162,38 110,95 100,100 105,90" fill="#6FA8DC" opacity=".7"/><polygon points="38,162 90,105 100,100 95,110" fill="#6FA8DC" opacity=".7"/>
+  </svg>
+  <div class="hero-inner">
+    <div class="eyebrow">Life Design Lab · <span id="session"></span></div>
+    <h1>Three Lives</h1>
+    <p>There's no single right path. Sketch three versions of your next five years and see what each one teaches you.</p>
+  </div>
+  <svg class="scribble" viewBox="0 0 1200 70" preserveAspectRatio="none" aria-hidden="true">
+    <path d="M0 40 C 150 10, 300 70, 450 40 S 750 10, 900 40 S 1100 60, 1200 30 L1200 70 L0 70 Z" fill="#FCFAFC"/>
+  </svg>
+</header>
+
+<main>
+  <div id="demo" class="banner" hidden>Demo mode: no Google Sheet is connected yet, so submissions only save in this browser. See README.md to connect one.</div>
+
+  <form id="form" novalidate>
+    <section class="card">
+      <h2 class="serif" style="margin-top:0">Before you start</h2>
+      <div class="row2">
+        <div class="field"><label for="name">Your name <span class="hint">(optional)</span></label><input type="text" id="name" maxlength="80" autocomplete="name"></div>
+        <div class="field"><label for="major">Year and major <span class="hint">(optional)</span></label><input type="text" id="major" maxlength="80" placeholder="Sophomore, Neuroscience"></div>
+      </div>
+      <div class="intro-grid">
+        <div class="intro-tile"><b>Life 1</b><span>Your current plan, the path you're already on.</span></div>
+        <div class="intro-tile"><b>Life 2</b><span>Life 1 vanished overnight. What do you do instead?</span></div>
+        <div class="intro-tile"><b>Life 3</b><span>Money and what people think don't matter. Go wild.</span></div>
+      </div>
+    </section>
+
+    <div class="tabs" role="tablist">
+      <button type="button" class="tab active" data-life="1" role="tab"><small><span class="dot"></span>Life 1</small><strong>Current plan</strong></button>
+      <button type="button" class="tab" data-life="2" role="tab"><small><span class="dot"></span>Life 2</small><strong>Plan B</strong></button>
+      <button type="button" class="tab" data-life="3" role="tab"><small><span class="dot"></span>Life 3</small><strong>Wild card</strong></button>
+    </div>
+    <div class="progress"><span id="bar"></span></div>
+
+    <section class="card" id="lives"></section>
+
+    <section class="card">
+      <label class="toggle"><input type="checkbox" id="share" checked> Show my three lives on the group gallery (your name stays hidden unless you check the box below).</label>
+      <label class="toggle" style="margin-top:8px"><input type="checkbox" id="showName"> Show my name on the gallery.</label>
+      <div class="nav-row">
+        <span class="hint">Takes about 10 minutes. You can jump between lives anytime.</span>
+        <button type="submit" class="btn big" id="submit">Submit my three lives</button>
+      </div>
+      <div class="error" id="err"></div>
+    </section>
+  </form>
+
+  <section class="card thanks" id="thanks">
+    <div class="eyebrow" style="color:var(--rose)">Submitted</div>
+    <h2>Three lives, one you.</h2>
+    <p>Now find a partner and share. Which life gave you the most energy?</p>
+    <div class="titles" id="titles"></div>
+    <a class="btn" href="gallery.html">See everyone's lives</a>
+  </section>
+</main>
+
+<footer>Johns Hopkins Life Design Lab · imagine.jhu.edu<br>Based on the Odyssey Plan exercise from <i>Designing Your Life</i>.</footer>
+
+<template id="lifeTpl">
+  <div class="life">
+    <div class="life-head"><div class="badge"></div><div><h2></h2></div></div>
+    <p class="prompt"></p>
+    <div class="field"><label>Five year timeline <span class="hint">Jobs, school, where you live, relationships, milestones</span></label>
+      <div class="timeline"></div></div>
+    <div class="field"><label>Six word title <span class="hint">(optional) Sum this life up in six words</span></label><input type="text" class="title" maxlength="80"></div>
+    <div class="nav-row"><button type="button" class="btn ghost prev">← Back</button><button type="button" class="btn next">Next life →</button></div>
+  </div>
+</template>
+
+<script>
+const CFG = window.THREE_LIVES_CONFIG || {};
+document.getElementById("session").textContent = CFG.SESSION || "Three Lives";
+if (!CFG.SCRIPT_URL) document.getElementById("demo").hidden = false;
+
+const LIVES = [
+  { n: 1, name: "Your current plan", color: "var(--life1)", prompt: "The path you're already on. If everything goes to plan, what do the next five years look like?" },
+  { n: 2, name: "Plan B", color: "var(--life2)", prompt: "Life 1 is gone. That option no longer exists. What would you do instead?" },
+  { n: 3, name: "The wild card", color: "var(--life3)", prompt: "Money and other people's opinions don't matter. What would you do with the next five years?" }
+];
+const year = new Date().getFullYear();
+const host = document.getElementById("lives");
+const tpl = document.getElementById("lifeTpl");
+
+LIVES.forEach((L, i) => {
+  const el = tpl.content.firstElementChild.cloneNode(true);
+  el.dataset.life = L.n;
+  if (i === 0) el.classList.add("active");
+  el.querySelector(".badge").textContent = L.n;
+  el.querySelector(".badge").style.background = L.color;
+  el.querySelector("h2").textContent = `Life ${L.n}: ${L.name}`;
+  el.querySelector("h2").style.color = L.color;
+  el.querySelector(".prompt").textContent = L.prompt;
+  const tl = el.querySelector(".timeline");
+  for (let y = 1; y <= 5; y++) {
+    tl.insertAdjacentHTML("beforeend", `<div class="yr"><div class="pin">${year + y}</div><textarea class="y${y}" maxlength="400" aria-label="Life ${L.n}, ${year + y}"></textarea></div>`);
+  }
+  el.querySelector(".prev").style.visibility = i === 0 ? "hidden" : "visible";
+  el.querySelector(".prev").onclick = () => show(L.n - 1);
+  const nx = el.querySelector(".next");
+  if (i === 2) { nx.textContent = "Review & submit ↓"; nx.onclick = () => document.getElementById("submit").scrollIntoView({ behavior: "smooth", block: "center" }); }
+  else nx.onclick = () => show(L.n + 1);
+  host.appendChild(el);
+});
+
+function show(n) {
+  document.querySelectorAll(".life").forEach(l => l.classList.toggle("active", +l.dataset.life === n));
+  document.querySelectorAll(".tab").forEach(t => t.classList.toggle("active", +t.dataset.life === n));
+  document.querySelector(".tabs").scrollIntoView({ behavior: "smooth", block: "start" });
+}
+document.querySelectorAll(".tab").forEach(t => t.onclick = () => show(+t.dataset.life));
+
+function lifeData(n) {
+  const el = document.querySelector(`.life[data-life="${n}"]`);
+  const d = { title: el.querySelector(".title").value.trim() };
+  for (let y = 1; y <= 5; y++) d["y" + y] = el.querySelector(".y" + y).value.trim();
+  return d;
+}
+function progress() {
+  let filled = 0, total = 0;
+  [1, 2, 3].forEach(n => {
+    const d = lifeData(n); const keys = ["y1", "y2", "y3", "y4", "y5"];
+    const f = keys.filter(k => d[k]).length; filled += f; total += keys.length;
+    document.querySelector(`.tab[data-life="${n}"]`).classList.toggle("done", keys.some(k => d[k]));
+  });
+  document.getElementById("bar").style.width = Math.round(filled / total * 100) + "%";
+}
+document.getElementById("form").addEventListener("input", progress);
+
+document.getElementById("form").addEventListener("submit", async e => {
+  e.preventDefault();
+  const err = document.getElementById("err"); err.textContent = "";
+  const lives = [1, 2, 3].map(lifeData);
+  const missing = lives.map((l, i) => ![1, 2, 3, 4, 5].some(y => l["y" + y]) ? i + 1 : null).filter(Boolean);
+  if (missing.length) { err.textContent = `Add at least one year to the timeline for Life ${missing.join(" and Life ")} before submitting.`; show(missing[0]); return; }
+  const payload = {
+    name: document.getElementById("name").value.trim(),
+    major: document.getElementById("major").value.trim(),
+    share: document.getElementById("share").checked,
+    showName: document.getElementById("showName").checked,
+    session: CFG.SESSION || "", lives
+  };
+  const btn = document.getElementById("submit"); btn.disabled = true; btn.textContent = "Sending…";
+  try {
+    if (CFG.SCRIPT_URL) {
+      const res = await fetch(CFG.SCRIPT_URL, { method: "POST", headers: { "Content-Type": "text/plain;charset=utf-8" }, body: JSON.stringify(payload) });
+      const out = await res.json();
+      if (!out.ok) throw new Error(out.error || "Save failed");
+    } else {
+      const all = JSON.parse(localStorage.getItem("threeLivesDemo") || "[]");
+      all.push({ ...payload, timestamp: new Date().toISOString() });
+      localStorage.setItem("threeLivesDemo", JSON.stringify(all));
+    }
+    document.getElementById("form").style.display = "none";
+    document.getElementById("titles").innerHTML = lives.map((l, i) => `<div style="border-left:5px solid ${LIVES[i].color}"><small>Life ${i + 1}</small>${esc(l.title || LIVES[i].name)}</div>`).join("");
+    document.getElementById("thanks").style.display = "block";
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  } catch (x) {
+    err.textContent = "Something went wrong saving your lives. Check your connection and try again. (" + x.message + ")";
+    btn.disabled = false; btn.textContent = "Submit my three lives";
+  }
+});
+function esc(s) { return s.replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c])); }
+</script>
+</body>
+</html>
